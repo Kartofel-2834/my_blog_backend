@@ -9,8 +9,11 @@ class SqlManager {
     schemaParsed = schemaParsed.join(', ')
 
     try {
-      await this.db.promise().query(`CREATE TABLE IF NOT EXISTS ${ name }(${ schemaParsed })`)
-    } catch (e) { throw err }
+      return await this.db.promise().query(`CREATE TABLE IF NOT EXISTS ${ name }(${ schemaParsed })`)
+    } catch (err) {
+      console.log(err)
+      return null
+    }
   }
 
   async insertIn(tableName, values){
@@ -33,13 +36,14 @@ class SqlManager {
     try {
       return await this.db.promise().query(command, insertData)
     } catch (err) {
-      throw err
+      console.log(err)
+      return null
     }
   }
 
-  async simpleSelectFrom(tableName, expression){
+  async simpleSelectFrom(tableName, expression, boolExp){
     let expParsed = Object.keys(expression).map( key => `${ key }=?`)
-    expParsed = expParsed.join(" AND ")
+    expParsed = expParsed.join(` ${ boolExp ? boolExp : 'AND' } `)
 
     let expValues = Object.keys(expression).map( key => expression[key] )
     let command = `SELECT * FROM ${ tableName } WHERE ${ expParsed }`
@@ -47,14 +51,18 @@ class SqlManager {
     try {
       let answer = await this.db.promise().query(command, expValues)
       return answer && answer.length ? answer[0] : null
-    } catch (err) { throw err }
+    } catch (err) {
+      console.log(err)
+      return null
+    }
   }
 
   async tableSchema(tableName){
     try {
       let ans = await this.db.promise().query(`DESCRIBE ${ tableName }`)
       return ans[0]
-    } catch (e) {
+    } catch (err) {
+      console.log(err)
       return null
     }
   }

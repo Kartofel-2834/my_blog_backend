@@ -19,7 +19,11 @@ const SqlManagerConstructor = require('./sqlManager.js')
 const sqlManager = new SqlManagerConstructor(db)
 
 sqlManager.createTable('users', staticData.users_info_schema)
-sqlManager.createTable('not_verifyed_users', staticData.users_info_schema)
+
+let usersSchemaWithToken = staticData.users_info_schema
+usersSchemaWithToken.token = "varchar(255)"
+
+sqlManager.createTable('not_verifyed_users', usersSchemaWithToken)
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false })
 const jsonParser = bodyParser.json()
