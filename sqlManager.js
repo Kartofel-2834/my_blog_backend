@@ -41,7 +41,7 @@ class SqlManager {
     }
   }
 
-  async simpleSelectFrom(tableName, expression, boolExp){
+  async selectFrom(tableName, expression, boolExp){
     let expParsed = Object.keys(expression).map( key => `${ key }=?`)
     expParsed = expParsed.join(` ${ boolExp ? boolExp : 'AND' } `)
 
