@@ -7,23 +7,7 @@ const mysql = require("mysql2");
 const staticData = require('./static.js')
 
 const registrationRouter = require(`./router/registration.js`)
-
-const db = mysql.createConnection({
-  host: "localhost",
-  database: "users",
-  user: staticData.sqlUser.name,
-  password: staticData.sqlUser.password,
-})
-
-const SqlManagerConstructor = require('./sqlManager.js')
-const sqlManager = new SqlManagerConstructor(db)
-
-sqlManager.createTable('users', staticData.users_info_schema)
-
-let usersSchemaWithToken = staticData.users_info_schema
-usersSchemaWithToken.token = "varchar(255)"
-
-sqlManager.createTable('not_verifyed_users', usersSchemaWithToken)
+const SqlManagerConstructor = require('./utils/sqlManager.js')
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false })
 const jsonParser = bodyParser.json()
@@ -37,8 +21,54 @@ if (port == null || port == "") {
 app.use(cors())
 app.use(urlencodedParser)
 app.use(jsonParser)
-app.use(registrationRouter(db))
-
 //app.use(express.static(srcPath))
 
-app.listen(port, ()=>{ console.log(`Server working on port ${port}`) })
+function timeNowInSqlFormat(){
+  return new Date().toISOString().slice(0, 19).replace('T', ' ')
+}
+
+async function deleteOldNotVerUsers(dbManager){
+  let users = await dbManager.selectFrom("not_verifyed_users")
+  users = users.filter( (user)=>{
+    let stamp = Math.floor((Date.now() - user.date) / 60000)
+    return stamp > 20
+  })
+
+  for (let user of users){
+    try {
+      dbManager.deleteFrom("not_verifyed_users", { id: user.id })
+    } catch(err) { throw err }
+  }
+}
+
+async function start(){
+  let db, dbManager
+
+  try {
+    db = await mysql.createConnection({
+      host: "localhost",
+      database: "users",
+      user: staticData.sqlUser.name,
+      password: staticData.sqlUser.password,
+    })
+  } catch(err) { throw err }
+
+  dbManager = new SqlManagerConstructor(db)
+  await dbManager.createTable('users', staticData.users_info_schema)
+
+  let usersSchemaWithToken = staticData.users_info_schema
+
+  usersSchemaWithToken.token = "varchar(255)"
+  usersSchemaWithToken.date = "datetime default now()"
+
+  await dbManager.createTable('not_verifyed_users', usersSchemaWithToken)
+
+  setInterval(()=>{ deleteOldNotVerUsers(dbManager) }, 20*60*1000)
+
+  //routers
+  app.use(registrationRouter(db))
+
+  app.listen(port, ()=>{ console.log(`Server working on port ${port}`) })
+}
+
+start()
