@@ -5,7 +5,7 @@ const SqlManagerConstructor = require('../utils/sqlManager.js')
 const checkRegistrationForm = require("./registration_routes/checkRegistrationForm.js")
 const checkToken = require("./registration_routes/checkToken.js")
 const setNewToken = require("./registration_routes/setNewToken.js")
-
+const signIn = require("./registration_routes/signIn.js")
 
 const staticData = require('../static.js')
 const nodemailer = require('nodemailer')
@@ -32,8 +32,9 @@ function registrationRouter(db){
     await setNewToken(req, res, dbManager, mailTransporter)
   })
 
-
-  //Send New Token Route //Send New Token Route //Send New Token Route
+  router.post("/signin", async (req, res)=>{
+    await signIn(req, res, dbManager)
+  })
 
   return router
 }

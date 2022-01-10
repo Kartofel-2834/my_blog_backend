@@ -6,8 +6,9 @@ const bodyParser = require("body-parser")
 const mysql = require("mysql2");
 const staticData = require('./static.js')
 
-const registrationRouter = require(`./router/registration.js`)
 const SqlManagerConstructor = require('./utils/sqlManager.js')
+const registrationRouter = require(`./router/registration.js`)
+const homePageRouter = require(`./router/homepage.js`)
 
 const urlencodedParser = bodyParser.urlencoded({ extended: false })
 const jsonParser = bodyParser.json()
@@ -54,19 +55,15 @@ async function start(){
   } catch(err) { throw err }
 
   dbManager = new SqlManagerConstructor(db)
-  await dbManager.createTable('users', staticData.users_info_schema)
 
-  let usersSchemaWithToken = staticData.users_info_schema
-
-  usersSchemaWithToken.token = "varchar(255)"
-  usersSchemaWithToken.date = "datetime default now()"
-
-  await dbManager.createTable('not_verifyed_users', usersSchemaWithToken)
+  await dbManager.createTable('users', staticData.user_info_schema)
+  await dbManager.createTable('not_verifyed_users', staticData.not_ver_user_schema)
 
   setInterval(()=>{ deleteOldNotVerUsers(dbManager) }, 20*60*1000)
 
   //routers
   app.use(registrationRouter(db))
+  app.use(homePageRouter(db))
 
   app.listen(port, ()=>{ console.log(`Server working on port ${port}`) })
 }
