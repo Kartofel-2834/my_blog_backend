@@ -6,6 +6,7 @@ const checkRegistrationForm = require("./registration_routes/checkRegistrationFo
 const checkToken = require("./registration_routes/checkToken.js")
 const setNewToken = require("./registration_routes/setNewToken.js")
 const signIn = require("./registration_routes/signIn.js")
+const { passwordRecovery, passwordRecoveryAccessToken } = require("./registration_routes/passwordRecovery.js")
 
 const staticData = require('../static.js')
 const nodemailer = require('nodemailer')
@@ -34,6 +35,14 @@ function registrationRouter(db){
 
   router.post("/signin", async (req, res)=>{
     await signIn(req, res, dbManager)
+  })
+
+  router.post("/password-recovery", async (req, res)=>{
+    await passwordRecoveryAccessToken(req, res, dbManager, mailTransporter)
+  })
+
+  router.patch("/password-recovery", async (req, res)=>{
+    await passwordRecovery(req, res, dbManager)
   })
 
   return router
