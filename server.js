@@ -22,7 +22,7 @@ if (port == null || port == "") {
 app.use(cors())
 app.use(urlencodedParser)
 app.use(jsonParser)
-//app.use(express.static(srcPath))
+app.use(express.static(`${ __dirname }/public`))
 
 function timeNowInSqlFormat(){
   return new Date().toISOString().slice(0, 19).replace('T', ' ')
@@ -58,6 +58,11 @@ async function start(){
 
   await dbManager.createTable('users', staticData.user_info_schema)
   await dbManager.createTable('not_verifyed_users', staticData.not_ver_user_schema)
+
+  await dbManager.createTable('posts', staticData.posts_schema)
+  await dbManager.createTable('post_images', staticData.post_images_schema)
+  await dbManager.createTable('follows', staticData.follows_schema)
+
 
   setInterval(()=>{ deleteOldNotVerUsers(dbManager) }, 20*60*1000)
 

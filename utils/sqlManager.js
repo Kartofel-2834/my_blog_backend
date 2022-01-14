@@ -52,11 +52,12 @@ class SqlManager {
     }
   }
 
-  async selectFrom(tableName, filterVal, boolExp){
+  async selectFrom(tableName, filterVal, boolExp, whatToSelect){
     let filter = filterVal ? parseInputDbValues(filterVal, boolExp ? boolExp : 'AND') : null
+    let selector = whatToSelect ? whatToSelect : "*"
     let answer
 
-    let command = `SELECT * FROM ${ tableName }`
+    let command = `SELECT ${ selector } FROM ${ tableName }`
     command = filter && filter.command ? `${ command } WHERE ${ filter.command }` : command
 
     try {
