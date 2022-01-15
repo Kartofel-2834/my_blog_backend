@@ -7,14 +7,22 @@ async function createPost(req, res, dbManager){
   try {
     let user = dbManager.selectFrom("users", { id: req.body.owner_id })
 
-    if ( !user || user.length == 0 ){ res.status(404).send("User not found") }
-  } catch(err) { res.status(500).send("Server error") }
+    if ( !user || user.length == 0 ){
+      res.status(404).send("User not found"); return
+    }
+  } catch(err) { res.status(500).send("Server error"); return }
+
+  let createdPost = null
 
   try {
-    dbManager.insertIn("posts", req.body)
-  } catch(err) { res.status(500).send("Server error") }
+    createdPost = await dbManager.insertIn("posts", req.body)
+    createdPost = Array.isArray(createdPost) && createdPost.length > 0 ? createdPost[0] : null
+    createdPost.date = Number(createdPost.date)
+  } catch(err) { res.status(500).send("Server error"); return }
 
-  res.sendStatus(204)
+  if ( !createdPost ) { res.status(500).send("Server error"); return }
+
+  res.status(200).json({ created: createdPost })
 }
 
 module.exports = createPost

@@ -43,10 +43,21 @@ class SqlManager {
     insertData = dataKeys.map( key => insertData[key] )
 
     let command = `INSERT INTO ${ tableName }(${ sqlKeys }) VALUES (${ questionSym })`
+    let inputResult = null
 
     try {
-      return await this.db.promise().query(command, insertData)
-    } catch (err) {
+      inputResult = await this.db.promise().query(command, insertData)
+      inputResult = inputResult.length && inputResult.length > 0 ? inputResult[0] : null
+    } catch(err) {
+      console.log(err)
+      return null
+    }
+
+    if ( !inputResult || !inputResult.insertId ){ return null }
+
+    try {
+      return await this.selectFrom(tableName, { id: inputResult.insertId })
+    } catch(err) {
       console.log(err)
       return null
     }
