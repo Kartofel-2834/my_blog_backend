@@ -6,6 +6,9 @@ const staticData = require('../static.js')
 const sendUserInfo = require("./homepage_routes/sendUserInfo.js")
 const createPost = require("./homepage_routes/createPost.js")
 
+const { upload } = require("../utils/helpers.js")
+
+
 function homePageRouter(db){
   const router = express.Router()
   const dbManager = new SqlManagerConstructor(db)
@@ -14,7 +17,7 @@ function homePageRouter(db){
     await sendUserInfo(req, res, dbManager)
   })
 
-  router.put("/post", async (req, res)=>{
+  router.put("/post", upload.array("clipedFiles"), async (req, res)=>{
     await createPost(req, res, dbManager)
   })
 

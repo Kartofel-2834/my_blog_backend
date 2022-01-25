@@ -1,5 +1,31 @@
 const staticData = require("../static.js")
 
+const fs = require("fs").promises
+const path = require("path")
+const multer = require("multer")
+
+
+const storage = multer.diskStorage({
+  destination: path.join(staticData.dirname, "public", "not_sorted_files"),
+  filename: function(req, file, cb){
+    let ext = path.extname(file.originalname)
+    cb(null, randomToken(10) + '-' + Date.now() + ext);
+  },
+})
+
+let upload = multer({
+  storage: storage,
+  fileFilter: function(req, file, cb){
+    let ext = path.extname(file.originalname)
+    return cb(null, /jpg|png|jpeg/.test(ext))
+  }
+})
+
+async function cloneFile(from, to){
+  let data = await fs.readFile(from)
+  await fs.writeFile(to, data)
+}
+
 function regBodyFieldError(body){
   const fieldError = (text)=>{
     const forbiddenSymbols = /^[^\%/\\&\?\,\'\;:!-+!@#\$\^*)(]{0,20}$/
@@ -42,4 +68,4 @@ function randomToken(len){
   return ans
 }
 
-module.exports = { randomToken, getRandom, sendMail, regBodyFieldError }
+module.exports = { randomToken, getRandom, sendMail, regBodyFieldError, upload, cloneFile }
