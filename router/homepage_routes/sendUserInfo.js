@@ -2,19 +2,15 @@ async function getUserPosts(dbManager, user){
   let posts = await dbManager.selectFrom("posts", { owner_id: user.id })
   posts = posts && posts.length ? posts : []
 
-  posts = posts.map((p)=>{
-    let ans = p
-
-    ans.date = Number(p.date)
+  for (let p of posts){
+    p.date = Number(p.date)
 
     if ( p.images ){
-      p.images = dbManager.selectFrom("post_images", { post_id: p.id })
-    } else { p.images = [] }
+      p.images = await dbManager.selectFrom("post_images", { post_id: p.id })
+    }
+  }
 
-    return ans
-  })
-
-  return posts
+  return posts.reverse()
 }
 
 async function getUser(userKeys, dbManager){
