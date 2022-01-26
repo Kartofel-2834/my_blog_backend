@@ -7,6 +7,8 @@ async function getUserPosts(dbManager, user){
 
     if ( p.images ){
       p.images = await dbManager.selectFrom("post_images", { post_id: p.id })
+    } else {
+      p.images = []
     }
   }
 
