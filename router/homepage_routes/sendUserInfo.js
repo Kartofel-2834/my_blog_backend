@@ -62,24 +62,6 @@ async function sendUserInfo(req, res, dbManager){
   if ( !answer ){ res.status(404).send("User not found"); return }
 
   res.status(200).json(answer)
-
-  /*
-  if ( !req.body.authKey || !req.body.tagname ){
-    res.status(400).send("Bad request"); return
-  }
-
-  let user = null
-
-  try {
-    user = await getUser(req.body, dbManager)
-  } catch(err) {
-    res.status(500).send("Server error"); return
-  }
-
-  if ( !user ){ res.status(500).send("Server error"); return }
-
-  res.status(200).json(user)
-  */
 }
 
 module.exports = sendUserInfo

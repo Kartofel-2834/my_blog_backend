@@ -6,6 +6,7 @@ const staticData = require('../static.js')
 const sendUserInfo = require("./homepage_routes/sendUserInfo.js")
 const createPost = require("./homepage_routes/createPost.js")
 const deletePost = require("./homepage_routes/deletePost.js")
+const follow = require("./homepage_routes/follow.js")
 
 const { upload } = require("../utils/helpers.js")
 
@@ -24,6 +25,10 @@ function homePageRouter(db){
 
   router.delete("/post", async (req, res)=>{
     await deletePost(req, res, dbManager)
+  })
+
+  router.post("/follow", async (req, res)=>{
+    await follow(req, res, dbManager)
   })
 
   return router
