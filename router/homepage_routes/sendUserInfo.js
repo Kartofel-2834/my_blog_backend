@@ -33,14 +33,14 @@ async function getUser(userKeys, dbManager){
 
   user.posts = await getUserPosts(dbManager, user)
 
-  let followers = await dbManager.selectFrom("follows", { blog_id: user.id }, null, "COUNT(*)")
-  user.followers = followers && followers.length > 0 ? followers[0]["COUNT(*)"] : 0
+  user.followers = await dbManager.selectFrom("follows", { blog_id: user.id })
+  user.followers = Array.isArray(user.followers) ? user.followers : []
 
-  let follows = await dbManager.selectFrom("follows", { follower_id: user.id }, null, "COUNT(*)")
-  user.follows = follows && follows.length > 0 ? follows[0]["COUNT(*)"] : 0
+  user.follows = await dbManager.selectFrom("follows", { follower_tag: user.tagname })
+  user.follows = Array.isArray(user.follows) ? user.follows : []
 
-  delete user.password
   if ( type == "guest" ){ delete user.authkey }
+  delete user.password
 
   return  { type, user }
 }
@@ -56,6 +56,7 @@ async function sendUserInfo(req, res, dbManager){
   try {
     answer = await getUser(req.body, dbManager)
   } catch(err) {
+    console.log(err)
     res.status(500).send("Server error"); return
   }
 
