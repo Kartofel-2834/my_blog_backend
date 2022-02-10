@@ -2,6 +2,14 @@ const fs = require("fs").promises
 const path = require("path")
 const staticData = require("../../static.js")
 
+async function getUser(id, authkey, dbManager){
+  if ( !id || !authkey ){ return null }
+
+  let user = await dbManager.selectFrom("users", { id, authkey })
+
+  return Array.isArray(user) && user.length > 0 ? user[0] : null
+}
+
 async function deletePostImages(postId, dbManager){
   let answer = { err: null }
   let images = null
@@ -34,6 +42,7 @@ async function deletePostImages(postId, dbManager){
 async function deletePost(req, res, dbManager){
   let postId = req.body.postId
   let post = null
+  let user = null
 
   if( !postId || typeof postId != "number" ){
     res.status(400).send("Bad request!"); return
@@ -46,9 +55,15 @@ async function deletePost(req, res, dbManager){
     res.status(500).send("Server error"); return
   }
 
-  if ( !post || !post.id ){
-    res.status(404).send("Post not found"); return
+  if ( !post || !post.id ){ res.status(404).send("Post not found"); return }
+
+  try {
+    user = await getUser(req.body.userId, req.body.authkey, dbManager)
+  } catch (err){
+    res.status(500).send("Server error"); return
   }
+
+  if ( !user || user.id != post.owner_id ){ res.status(403).send("Forbidden"); return }
 
   if ( post.images ){
     let imageDeleteRes = await deletePostImages(post.id, dbManager)
@@ -57,6 +72,7 @@ async function deletePost(req, res, dbManager){
   }
 
   try {
+    await dbManager.deleteFrom("likes", { post_id: postId })
     await dbManager.deleteFrom("posts", { id: postId })
   } catch (err) {
     res.status(500).send("Server error"); return

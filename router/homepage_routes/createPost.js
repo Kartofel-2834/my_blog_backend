@@ -21,36 +21,28 @@ async function sortFileByMimetype(file){
 
   try {
     await fs.unlink(file.path)
-  } catch(err) { console.log(err) }
+  } catch(err) {
+    console.log(err)
+  }
 
   return answer
 }
-//ROUTE LISTENER
 
+async function getUser(id, authkey, dbManager){
+  if ( !id || !authkey ){ return null }
 
-async function createPost(req, res, dbManager){
-  if ( !req.body.owner_id && !(req.body.text || req.files.length > 0) ){
-    res.status(400).send("Bad request"); return
-  }
+  let user = await dbManager.selectFrom("users", { id, authkey })
 
-  let newPost = req.body
-  newPost.owner_id = Number(newPost.owner_id)
+  return Array.isArray(user) && user.length > 0 ? user[0] : null
+}
 
-  try {
-    let user = await dbManager.selectFrom("users", { id: newPost.owner_id })
+async function sortAndParseFiles(files){
+  let answer = {}
 
-    if ( !user || user.length == 0 ){
-      res.status(404).send("User not found"); return
-    }
-  } catch(err) { res.status(500).send("Server error"); return }
-
-
-  let postFiles = {}
-
-  for (let file of req.files){
+  for (let file of files){
     let sortAns = await sortFileByMimetype(file)
 
-    if ( sortAns.err ){ res.status(500).send("Server error"); return }
+    if ( sortAns.err ){ return null }
 
     if ( sortAns.filetype ){
       let dbFile = {
@@ -58,10 +50,73 @@ async function createPost(req, res, dbManager){
         ext: path.extname(file.filename),
       }
 
-      if ( postFiles[sortAns.filetype] ){
-        postFiles[sortAns.filetype].push(dbFile)
-      } else { postFiles[sortAns.filetype] = [ dbFile ] }
+      if ( answer[sortAns.filetype] ){
+        answer[sortAns.filetype].push(dbFile)
+      } else {
+        answer[sortAns.filetype] = [ dbFile ]
+      }
     }
+  }
+
+  return answer
+}
+
+async function packPost(sqlPost, postFiles, dbManager){
+  let post = sqlPost
+
+  post.date = Number(post.date)
+
+  post.likes = await dbManager.selectFrom("likes", { post_id: post.id })
+  post.likes = Array.isArray(post.likes) ? post.likes : []
+
+  for ( let filetype of ["images"] ){
+    post[filetype] = postFiles[filetype] ? postFiles[filetype] : []
+  }
+
+  return post
+}
+
+async function insertPostFilesInfoInDb(postId, postFiles, dbManager){
+  let files = postFiles
+
+  for ( let filetype of Object.keys(files) ){
+    for ( let fileInfo of files[filetype] ){
+      fileInfo.post_id = postId
+
+      await dbManager.insertIn(`post_${ filetype }`, fileInfo)
+    }
+  }
+
+  return files
+}
+
+//ROUTE LISTENER
+
+
+async function createPost(req, res, dbManager){
+  let authkey = req.body.authkey
+
+  let newPost = req.body
+  delete newPost.authkey
+
+  if ( !authkey || !newPost.owner_id && !(newPost.text || req.files.length > 0) ){
+    res.status(400).send("Bad request"); return
+  }
+
+  newPost.owner_id = Number(newPost.owner_id)
+
+  try {
+    let user = await getUser(newPost.owner_id, authkey, dbManager)
+
+    if ( !user ){ res.status(404).send("User not found"); return }
+  } catch(err) {
+    res.status(500).send("Server error"); return
+  }
+
+  let postFiles = await sortAndParseFiles(req.files)
+
+  if ( postFiles == null ){
+    res.status(500).send("Server error"); return
   }
 
   for ( let filetype of Object.keys(postFiles) ){ newPost[filetype] = true }
@@ -71,30 +126,23 @@ async function createPost(req, res, dbManager){
   try {
     createdPost = await dbManager.insertIn("posts", newPost)
     createdPost = Array.isArray(createdPost) && createdPost.length > 0 ? createdPost[0] : null
-    createdPost.date = Number(createdPost.date)
-  } catch(err) { res.status(500).send("Server error"); return }
+  } catch(err) {
+    res.status(500).send("Server error"); return
+  }
 
   if ( !createdPost ){ res.status(500).send("Server error"); return }
 
+  try {
+     postFiles = await insertPostFilesInfoInDb(createdPost.id, postFiles, dbManager)
+  }
+  catch (err){
+    res.status(500).send("Server error"); return
+  }
 
-  for ( let filetype of Object.keys(postFiles) ){
-    let err = null
-
-    postFiles[filetype].map( async (f)=>{
-      if ( err ){ return }
-
-      let ans = f
-      ans.post_id = createdPost.id
-
-      try { await dbManager.insertIn("post_images", ans) }
-      catch (e){ err = e; return }
-
-      return ans
-    })
-
-    if (err){ res.status(500).send("Server error"); return }
-
-    createdPost[filetype] = postFiles[filetype]
+  try {
+    createdPost = await packPost(createdPost, postFiles, dbManager)
+  } catch (err) {
+    res.status(500).send("Server error"); return
   }
 
   res.status(200).json({ created: createdPost })
