@@ -5,6 +5,12 @@ async function getUserPosts(dbManager, user){
   for (let p of posts){
     p.date = Number(p.date)
 
+    p.likes = await dbManager.selectFrom("likes", { post_id: p.id })
+    p.likes.map( (l)=>{
+      l.date = Number(l.date)
+      return l
+    })
+
     if ( p.images ){
       p.images = await dbManager.selectFrom("post_images", { post_id: p.id })
     } else {

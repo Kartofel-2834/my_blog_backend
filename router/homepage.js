@@ -7,6 +7,7 @@ const sendUserInfo = require("./homepage_routes/sendUserInfo.js")
 const createPost = require("./homepage_routes/createPost.js")
 const deletePost = require("./homepage_routes/deletePost.js")
 const { follow, unfollow } = require("./homepage_routes/follow.js")
+const { likePost, dislikePost } = require("./homepage_routes/likePost.js")
 
 const { upload } = require("../utils/helpers.js")
 
@@ -33,6 +34,14 @@ function homePageRouter(db){
 
   router.delete("/follow", async (req, res)=>{
     await unfollow(req, res, dbManager)
+  })
+
+  router.post("/like", async (req, res)=>{
+    await likePost(req, res, dbManager)
+  })
+
+  router.delete("/like", async (req, res)=>{
+    await dislikePost(req, res, dbManager)
   })
 
   return router
