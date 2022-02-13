@@ -14,6 +14,7 @@ async function passwordRecoveryAccessToken(req, res, dbManager, mailTransporter)
   if( !user || !user.mail ){ res.status(404).send("User with this mail not exist"); return }
 
   try {
+    console.log(user.mail)
     await sendMail(mailTransporter, user.mail, `Your auth token: ${ token }`, `Token: <b>${ token }</b>`)
   } catch(err) {
     console.log(err)
