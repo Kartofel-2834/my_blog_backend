@@ -1,11 +1,12 @@
 async function getUserPosts(dbManager, user){
-  let posts = await dbManager.selectFrom("posts", { owner_id: user.id })
+  let posts = await dbManager.selectFrom("posts", { owner_id: user.id },  null, null, "date")
   posts = posts && posts.length ? posts : []
 
   for (let p of posts){
     p.date = Number(p.date)
 
-    p.likes = await dbManager.selectFrom("likes", { post_id: p.id })
+    p.likes = await dbManager.selectFrom("likes", { post_id: p.id }, null, null, "user_tag")
+
     p.likes.map( (l)=>{
       l.date = Number(l.date)
       return l

@@ -46,21 +46,25 @@ async function likePost(req, res, dbManager){
 
   if ( alsoLiked ){ res.status(400).send("Also liked"); return }
 
-  let createdLike = null
-
   try {
-    createdLike = await dbManager.insertIn("likes", like)
-    createdLike = Array.isArray(createdLike) && createdLike.length > 0 ? createdLike[0] : null
+    await dbManager.insertIn("likes", like)
   } catch(err) {
     res.status(500).send("Server error"); return
   }
 
-  if ( createdLike ){
-    createdLike.date = Number(createdLike.date)
-    res.status(200).json(createdLike)
-  } else {
-    res.status(500).send("Server error")
+  let likesUpdated = null
+
+  try {
+    likesUpdated = await dbManager.selectFrom("likes", { post_id: like.post_id }, null, null, "user_tag")
+  } catch (err) {
+    res.status(500).send("Server error"); return
   }
+
+  if ( !likesUpdated ){
+    res.status(500).send("Server error"); return
+  }
+
+  res.status(200).json(likesUpdated)
 }
 
 async function dislikePost(req, res, dbManager){

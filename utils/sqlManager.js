@@ -63,13 +63,14 @@ class SqlManager {
     }
   }
 
-  async selectFrom(tableName, filterVal, boolExp, whatToSelect){
+  async selectFrom(tableName, filterVal, boolExp, whatToSelect, order){
     let filter = filterVal ? parseInputDbValues(filterVal, boolExp ? boolExp : 'AND') : null
     let selector = whatToSelect ? whatToSelect : "*"
     let answer
 
     let command = `SELECT ${ selector } FROM ${ tableName }`
     command = filter && filter.command ? `${ command } WHERE ${ filter.command }` : command
+    command = typeof order == "string" ? `${ command } ORDER BY ${ order }` : command
 
     try {
       if ( filter && filter.values ){

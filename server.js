@@ -24,6 +24,20 @@ app.use(urlencodedParser)
 app.use(jsonParser)
 app.use(express.static(`${ __dirname }/public`))
 
+function random(min, max){
+  return min + Math.random() * (max - min)
+}
+
+function randomChars(len){
+  let answer = ""
+
+  for ( let i=0; i<len; i++ ){
+    answer += String.fromCharCode( random(65, 90) );
+  }
+
+  return answer
+}
+
 function timeNowInSqlFormat(){
   return new Date().toISOString().slice(0, 19).replace('T', ' ')
 }
@@ -64,7 +78,12 @@ async function start(){
   await dbManager.createTable('follows', staticData.follows_schema)
   await dbManager.createTable('likes', staticData.likes_schema)
 
+  //for ( let i=0; i<100; i++ ){
+    //await dbManager.insertIn("likes", { user_tag: randomChars(10), owner_tag: "kartofel2834", post_id: 145 })
+  //}
+
   setInterval(()=>{ deleteOldNotVerUsers(dbManager) }, 20*60*1000)
+
 
   //routers
   app.use(registrationRouter(db))
